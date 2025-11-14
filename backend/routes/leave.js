@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const jwt = require('jsonwebtoken');
+const { authenticateToken, requireHR } = require('../middleware/auth');
 require('dotenv').config();
 const SECRET_KEY = process.env.SECRET_KEY;
 
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, requireHR, async (req, res) => {
     const sql = 'SELECT * FROM `leave`';
     try {
         const [results] = await db.query(sql);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 });
 
 
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
     try {
         const token = req.cookies.token;
         if (!token) {
@@ -41,7 +42,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-router.put('/:leave_id', async (req, res) => {
+router.put('/:leave_id', authenticateToken, requireHR, async (req, res) => {
     const { status } = req.body;
     const { leave_id } = req.params;
     const sql = 'UPDATE `leave` SET status = ? WHERE leave_id = ?';

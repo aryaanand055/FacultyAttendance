@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { authenticateToken, requireHR } = require('../middleware/auth');
 
 
 
@@ -27,7 +28,7 @@ function absent_marked(summary) {
 }
 
 
-router.post('/attendance_viewer', async (req, res) => {
+router.post('/attendance_viewer', authenticateToken, requireHR, async (req, res) => {
   const { date } = req.body;
   try {
     const [rows] = await db.query(
@@ -58,7 +59,7 @@ router.post('/attendance_viewer', async (req, res) => {
 });
 
 
-router.post('/dept_summary', async (req, res) => {
+router.post('/dept_summary', authenticateToken, requireHR, async (req, res) => {
   const [startDate, endDate] = await start_end_time();
   const { category, dept } = req.body;
   let rows = [];
@@ -162,7 +163,7 @@ router.post('/dept_summary', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-router.post('/individual_data', async (req, res) => {
+router.post('/individual_data', authenticateToken, async (req, res) => {
   function parseTimeToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(":").map(Number);
     return hours * 60 + minutes;
@@ -254,7 +255,7 @@ router.post('/individual_data', async (req, res) => {
   }
 });
 
-router.post('/applyExemption', async (req, res) => {
+router.post('/applyExemption', authenticateToken, async (req, res) => {
   let { exemptionType, staffId, exemptionSession, exemptionDate, exemptionReason, otherReason, start_time, end_time, exemptionStatus } = req.body;
 
   // 1. Prepare data for the database, converting empty values to null
@@ -321,7 +322,7 @@ router.post('/applyExemption', async (req, res) => {
     res.status(500).json({ message: "Failed to add exemption", error: err.message });
   }
 });
-router.get('/hr_exemptions_all', async (req, res) => {
+router.get('/hr_exemptions_all', authenticateToken, requireHR, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM exemptions  ORDER BY exemptionDate DESC');
     res.json({ message: "Exemptions fetched successfully", exemptions: rows });
@@ -329,7 +330,7 @@ router.get('/hr_exemptions_all', async (req, res) => {
     res.status(500).json({ message: "Failed to fetch exemptions" });
   }
 });
-router.get("/staff_exemptions/:staffId", async (req, res) => {
+router.get("/staff_exemptions/:staffId", authenticateToken, async (req, res) => {
   const { staffId } = req.params;
   try {
     const [rows] = await db.query('SELECT * FROM exemptions WHERE staffId = ? ORDER BY exemptionDate DESC', [staffId]);
@@ -339,7 +340,7 @@ router.get("/staff_exemptions/:staffId", async (req, res) => {
   }
 });
 
-router.post('/hr_exemptions/approve', async (req, res) => {
+router.post('/hr_exemptions/approve', authenticateToken, requireHR, async (req, res) => {
   const { exemptionId } = req.body;
   
   try {
@@ -366,7 +367,7 @@ router.post('/hr_exemptions/approve', async (req, res) => {
 });
 
 
-router.post('/hr_exemptions/reject', async (req, res) => {
+router.post('/hr_exemptions/reject', authenticateToken, requireHR, async (req, res) => {
   const { exemptionId } = req.body;
   try {
     let sql = 'UPDATE exemptions SET exemptionStatus = "rejected" WHERE exemptionId = ?';
@@ -382,7 +383,7 @@ router.post('/hr_exemptions/reject', async (req, res) => {
   }
 });
 
-router.post("/search/getuser", async (req, res) => {
+router.post("/search/getuser", authenticateToken, async (req, res) => {
   const { staffId } = req.body;
   try {
     const [rows] = await db.query('SELECT * FROM staff WHERE staff_id = ?', [staffId]);
@@ -395,7 +396,7 @@ router.post("/search/getuser", async (req, res) => {
   }
 });
 
-router.get("/categories", async (req, res) => {
+router.get("/categories", authenticateToken, async (req, res) => {
   try {
     const [rows] = await db.query("select * from category");
     res.json({ message: "Categories fetched successfully", success: true, categories: rows });
@@ -404,7 +405,7 @@ router.get("/categories", async (req, res) => {
   }
 })
 
-router.get('/devices', async (req, res) => {
+router.get('/devices', authenticateToken, requireHR, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM devices');
     res.json({ message: "Devices fetched successfully", success: true, devices: rows });
@@ -414,7 +415,7 @@ router.get('/devices', async (req, res) => {
   }
 });
 
-router.post("/add_categories", async (req, res) => {
+router.post("/add_categories", authenticateToken, requireHR, async (req, res) => {
   const { category_description, in_time, break_in, break_out, out_time, break_time_mins } = req.body;
 
   try {
@@ -455,7 +456,7 @@ await db.query(
   }
 });
 
-router.post('/devices/add', async (req, res) => {
+router.post('/devices/add', authenticateToken, requireHR, async (req, res) => {
   let { ip_address, device_name, device_location, image_url } = req.body;
   if (!image_url) {
     image_url = "https://5.imimg.com/data5/SELLER/Default/2021/8/YO/BR/DA/5651309/essl-ai-face-venus-face-attendance-system-with-artificial-intelligence-500x500.jpg";
@@ -475,7 +476,7 @@ router.post('/devices/add', async (req, res) => {
 });
 
 
-router.post('/devices/update', async (req, res) => {
+router.post('/devices/update', authenticateToken, requireHR, async (req, res) => {
   let { id, ip_address, device_name, device_location, image_url } = req.body;
   if (image_url === undefined || image_url === null || image_url === "") {
     image_url = "https://5.imimg.com/data5/SELLER/Default/2021/8/YO/BR/DA/5651309/essl-ai-face-venus-face-attendance-system-with-artificial-intelligence-500x500.jpg";
@@ -488,7 +489,7 @@ router.post('/devices/update', async (req, res) => {
     res.status(500).json({ message: "Failed to update device" });
   }
 });
-router.post('/devices/delete', async (req, res) => {
+router.post('/devices/delete', authenticateToken, requireHR, async (req, res) => {
   let { id } = req.body;
   try {
     await db.query('DELETE FROM devices WHERE device_id = ?', [id]);
@@ -501,7 +502,7 @@ router.post('/devices/delete', async (req, res) => {
 
 
 
-router.get('/get_user/:id', async (req, res) => {
+router.get('/get_user/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
     const [rows] = await db.query(`
