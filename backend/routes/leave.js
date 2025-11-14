@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const jwt = require('jsonwebtoken');
+const { authenticateToken, requireHR } = require('../middleware/auth');
+const { body, param, validationResult } = require('express-validator');
 require('dotenv').config();
 const SECRET_KEY = process.env.SECRET_KEY;
 
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, requireHR, async (req, res) => {
     const sql = 'SELECT * FROM `leave`';
     try {
         const [results] = await db.query(sql);
@@ -17,7 +19,17 @@ router.get('/', async (req, res) => {
 });
 
 
-router.post('/', async (req, res) => {
+router.post('/', [
+    authenticateToken,
+    body('start_date').isDate().withMessage('Invalid start date'),
+    body('end_date').isDate().withMessage('Invalid end date'),
+    body('leave_type').trim().notEmpty().withMessage('Leave type is required')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+    }
+
     try {
         const token = req.cookies.token;
         if (!token) {
@@ -41,7 +53,17 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-router.put('/:leave_id', async (req, res) => {
+router.put('/:leave_id', [
+    authenticateToken, 
+    requireHR,
+    param('leave_id').isInt().withMessage('Invalid leave ID'),
+    body('status').isIn(['pending', 'approved', 'rejected']).withMessage('Invalid status')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+    }
+
     const { status } = req.body;
     const { leave_id } = req.params;
     const sql = 'UPDATE `leave` SET status = ? WHERE leave_id = ?';

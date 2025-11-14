@@ -176,5 +176,105 @@
 
 .delete-c-btn:hover {
   color: var(--secondary);
+}
 
+/* Loading spinner styles */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+/* Form input focus styles */
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(63, 63, 149, 0.25);
+}
+
+/* Smooth transitions */
+.btn, .form-control, .nav-link, .dropdown-menu {
+  transition: all 0.3s ease;
+}
+
+/* Improved button disabled state */
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Better scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-4);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .w-50 {
+    width: 90% !important;
+  }
+  
+  .glassy-navbar .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  .m-large {
+    margin-top: 5rem;
+  }
+}
+
+/* Card hover effect */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Password visibility toggle */
+.position-relative .btn-link {
+  padding: 0.375rem 0.75rem;
+  color: var(--primary);
+}
+
+.position-relative .btn-link:hover {
+  color: var(--secondary);
+}
+
+/* Better focus visible for accessibility */
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }

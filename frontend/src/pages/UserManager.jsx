@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from '../axios';
 import PageWrapper from '../components/PageWrapper';
 import { useAlert } from '../components/AlertProvider';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 function UserManager() {
   const { showAlert } = useAlert();
@@ -11,6 +12,7 @@ function UserManager() {
   const [loading, setLoading] = useState(false);
   const [loading1, setLoading1] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -26,6 +28,7 @@ function UserManager() {
   const [editSearchId, setEditSearchId] = useState('');
 
   const [deleteId, setDeleteId] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -83,7 +86,11 @@ function UserManager() {
   };
 
   const handleSearchEditUser = async () => {
-    if (!editSearchId.trim()) return;
+    if (!editSearchId.trim()) {
+      showAlert('Please enter a Staff ID', 'warning');
+      return;
+    }
+    setSearchLoading(true);
     try {
       const res = await axios.get(`/attendance/get_user/${editSearchId}`);
       if (res.data.success) {
@@ -103,6 +110,8 @@ function UserManager() {
     } catch (err) {
       console.error(err);
       showAlert('Fetch user failed', 'danger');
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -137,9 +146,14 @@ function UserManager() {
   const handleDeleteUser = async (e) => {
     e.preventDefault();
     if (!/^[A-Za-z]\d+$/.test(deleteId)) {
-      showAlert('Invalid ID format', 'danger');
+      showAlert('Invalid ID format. Expected format: S123', 'danger');
       return;
     }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
     setLoading1(true);
     try {
       const res = await axios.post('/essl/delete_user', { id: deleteId });
@@ -202,7 +216,14 @@ function UserManager() {
           </div>
           <div className="mt-4">
             <button type="submit" className="btn btn-c-primary px-5" disabled={loading}>
-              {loading ? 'Adding...' : 'Add User'}
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Adding...
+                </>
+              ) : (
+                'Add User'
+              )}
             </button>
           </div>
         </form>
@@ -212,8 +233,27 @@ function UserManager() {
       <div className="mb-5 p-4 rounded-3 bg-light border">
         <h4 className="mb-3 text-c-primary fw-bold">Edit User</h4>
         <div className="mb-3 d-flex gap-2">
-          <input className="form-control" placeholder="Enter Staff ID" value={editSearchId} onChange={(e) => setEditSearchId(e.target.value)} />
-          <button className="btn btn-outline-primary" onClick={handleSearchEditUser}>Search</button>
+          <input 
+            className="form-control" 
+            placeholder="Enter Staff ID" 
+            value={editSearchId} 
+            onChange={(e) => setEditSearchId(e.target.value)}
+            disabled={searchLoading}
+          />
+          <button 
+            className="btn btn-outline-primary" 
+            onClick={handleSearchEditUser}
+            disabled={searchLoading}
+          >
+            {searchLoading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Searching...
+              </>
+            ) : (
+              'Search'
+            )}
+          </button>
         </div>
         {editUser && (
           <form onSubmit={handleEditUser}>
@@ -256,8 +296,15 @@ function UserManager() {
               </div>
             </div>
             <div className="mt-4">
-              <button type="submit" className="btn btn-primary px-5" disabled={loading}>
-                {loading ? 'Editing...' : 'Edit User'}
+              <button type="submit" className="btn btn-primary px-5" disabled={editLoading}>
+                {editLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Updating...
+                  </>
+                ) : (
+                  'Update User'
+                )}
               </button>
 
             </div>
@@ -273,10 +320,28 @@ function UserManager() {
             <input type="text" className="form-control" placeholder="Staff ID (e.g., S123)" value={deleteId} onChange={(e) => setDeleteId(e.target.value)} required />
           </div>
           <button className="btn btn-c-secondary" type="submit" disabled={loading1}>
-            {loading1 ? 'Deleting...' : 'Delete User'}
+            {loading1 ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Deleting...
+              </>
+            ) : (
+              'Delete User'
+            )}
           </button>
         </form>
       </div>
+
+      <ConfirmDialog
+        show={showDeleteConfirm}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete user ${deleteId}? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
 
     </PageWrapper>
   );
