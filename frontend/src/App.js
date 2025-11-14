@@ -20,6 +20,7 @@ import UserManager from './pages/UserManager';
 import CategoryManager from './pages/CategoryManager';
 import DevicesManager from './pages/DevicesManager';
 import HRLeaveManager from './pages/HRLeaveManager';
+import ChangePassword from './pages/ChangePassword';
 // import LeaveManager from './pages/LeaveManager';
 
 // --- Auth & Context Imports ---
@@ -156,7 +157,12 @@ function AppContent() {
                                     
                                 </ul>
                             )}
-                            <div className="ms-auto">
+                            <div className="ms-auto d-flex align-items-center gap-2">
+                                {isAuthenticated && (
+                                    <Link className="nav-link d-flex align-items-center" to="/change-password" title="Change Password">
+                                        <i className="bi bi-key fs-5"></i>
+                                    </Link>
+                                )}
                                 {isAuthenticated ? (
                                     <button className="nav-link d-flex align-items-center btn btn-link" onClick={logout} title="Logout">
                                         <i className="bi bi-box-arrow-right fs-4"></i>
@@ -188,6 +194,7 @@ function AppContent() {
                     {/* Staff Routes */}
                     <Route path="/staffIndividualReport" element={<RequireStaff><IndividualStaffReport /></RequireStaff>} />
                     <Route path="/applyExemption" element={<RequireStaff><ExemptionApplyPage /></RequireStaff>} />
+                    <Route path="/change-password" element={<RequireStaff><ChangePassword /></RequireStaff>} />
                     
                     <Route path="/" element={
                         isAuthenticated

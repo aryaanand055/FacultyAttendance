@@ -8,6 +8,8 @@ import { useAlert } from '../components/AlertProvider';
 
 function LoginPage() {
   const [formData, setFormData] = useState({ userId: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   // const location = useLocation();
   const { login } = useAuth();
@@ -19,8 +21,13 @@ function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const result = await login(formData);
       console.log('Login result:', result);
@@ -41,11 +48,13 @@ function LoginPage() {
       }
     } catch (error) {
       showAlert('An error occurred during login. Please try again.', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-50 m-auto">
+    <div className="w-50 m-auto" style={{ minWidth: '300px', maxWidth: '500px' }}>
 
       <PageWrapper title="Login">
         <form onSubmit={handleSubmit}>
@@ -57,21 +66,52 @@ function LoginPage() {
               value={formData.userId}
               onChange={handleChange}
               className="form-control"
+              placeholder="Enter your user ID"
               required
+              disabled={isLoading}
+              autoComplete="username"
             />
           </div>
           <div className="mb-4">
             <label className="form-label fw-medium">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-control"
-              required
-            />
+            <div className="position-relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-control"
+                placeholder="Enter your password"
+                required
+                disabled={isLoading}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
+                onClick={togglePasswordVisibility}
+                style={{ zIndex: 10, textDecoration: 'none' }}
+                disabled={isLoading}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+              </button>
+            </div>
           </div>
-          <button type="submit" className="btn btn-primary w-100 btn-c-primary">Login</button>
+          <button 
+            type="submit" 
+            className="btn btn-primary w-100 btn-c-primary" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Logging in...
+              </>
+            ) : (
+              'Login'
+            )}
+          </button>
         </form>
       </PageWrapper>
     </div>
