@@ -4,6 +4,7 @@ const db = require('../db');
 const password = require('./passWord');
 const { exec } = require('child_process');
 const { authenticateToken, requireHR } = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
 require('dotenv').config();
 const scriptPath = process.env.PYTHON_SCRIPT_PATH;
 
@@ -22,7 +23,19 @@ function runPythonScript(args) {
 
 
 
-router.post('/edit_user', authenticateToken, requireHR, async (req, res) => {
+router.post('/edit_user', [
+  authenticateToken, 
+  requireHR,
+  body('id').trim().notEmpty().withMessage('User ID is required'),
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('dept').trim().notEmpty().withMessage('Department is required'),
+  body('designation').trim().notEmpty().withMessage('Designation is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   const { id, name, dept, designation, category } = req.body;
   console.log(req.body);
   try {
@@ -50,7 +63,19 @@ router.post('/edit_user', authenticateToken, requireHR, async (req, res) => {
   }
 });
 
-router.post('/add_user', authenticateToken, requireHR, async (req, res) => {
+router.post('/add_user', [
+  authenticateToken, 
+  requireHR,
+  body('id').trim().notEmpty().withMessage('User ID is required'),
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('dept').trim().notEmpty().withMessage('Department is required'),
+  body('designation').trim().notEmpty().withMessage('Designation is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   let { id, name, dept, category, designation, staff_type, intime, outtime, breakmins, breakin, breakout } = req.body;
   try {
     const pythonResult = await runPythonScript(['set_user_credentials', id, name]);
@@ -89,12 +114,17 @@ router.post('/add_user', authenticateToken, requireHR, async (req, res) => {
   }
 });
 
-router.post('/delete_user', authenticateToken, requireHR, async (req, res) => {
-  const { id } = req.body;
-
-  if (!/^[A-Za-z]\d+$/.test(id)) {
-    return res.status(400).json({ error: 'Invalid ID format' });
+router.post('/delete_user', [
+  authenticateToken, 
+  requireHR,
+  body('id').trim().notEmpty().withMessage('User ID is required').matches(/^[A-Za-z]\d+$/).withMessage('Invalid ID format')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
   }
+
+  const { id } = req.body;
 
   try {
     const pythonResult = await runPythonScript(['delete_user', id]);

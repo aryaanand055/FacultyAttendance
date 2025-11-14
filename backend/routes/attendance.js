@@ -2,8 +2,16 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticateToken, requireHR } = require('../middleware/auth');
+const { body, param, validationResult } = require('express-validator');
 
-
+// Helper function to handle validation errors
+function handleValidationErrors(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+  next();
+}
 
 async function start_end_time() {
   const today = new Date();
@@ -28,7 +36,16 @@ function absent_marked(summary) {
 }
 
 
-router.post('/attendance_viewer', authenticateToken, requireHR, async (req, res) => {
+router.post('/attendance_viewer', [
+  authenticateToken, 
+  requireHR,
+  body('date').isDate().withMessage('Invalid date format')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+  
   const { date } = req.body;
   try {
     const [rows] = await db.query(
@@ -163,7 +180,17 @@ router.post('/dept_summary', authenticateToken, requireHR, async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-router.post('/individual_data', authenticateToken, async (req, res) => {
+router.post('/individual_data', [
+  authenticateToken,
+  body('start_date').isDate().withMessage('Invalid start date'),
+  body('end_date').isDate().withMessage('Invalid end date'),
+  body('id').trim().notEmpty().withMessage('Staff ID is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   function parseTimeToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(":").map(Number);
     return hours * 60 + minutes;
@@ -255,7 +282,17 @@ router.post('/individual_data', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/applyExemption', authenticateToken, async (req, res) => {
+router.post('/applyExemption', [
+  authenticateToken,
+  body('staffId').trim().notEmpty().withMessage('Staff ID is required'),
+  body('exemptionType').trim().notEmpty().withMessage('Exemption type is required'),
+  body('exemptionDate').optional().isDate().withMessage('Invalid date format')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   let { exemptionType, staffId, exemptionSession, exemptionDate, exemptionReason, otherReason, start_time, end_time, exemptionStatus } = req.body;
 
   // 1. Prepare data for the database, converting empty values to null
@@ -330,7 +367,15 @@ router.get('/hr_exemptions_all', authenticateToken, requireHR, async (req, res) 
     res.status(500).json({ message: "Failed to fetch exemptions" });
   }
 });
-router.get("/staff_exemptions/:staffId", authenticateToken, async (req, res) => {
+router.get("/staff_exemptions/:staffId", [
+  authenticateToken,
+  param('staffId').trim().notEmpty().withMessage('Staff ID is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   const { staffId } = req.params;
   try {
     const [rows] = await db.query('SELECT * FROM exemptions WHERE staffId = ? ORDER BY exemptionDate DESC', [staffId]);
@@ -340,7 +385,16 @@ router.get("/staff_exemptions/:staffId", authenticateToken, async (req, res) => 
   }
 });
 
-router.post('/hr_exemptions/approve', authenticateToken, requireHR, async (req, res) => {
+router.post('/hr_exemptions/approve', [
+  authenticateToken, 
+  requireHR,
+  body('exemptionId').isInt().withMessage('Invalid exemption ID')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   const { exemptionId } = req.body;
   
   try {
@@ -367,7 +421,16 @@ router.post('/hr_exemptions/approve', authenticateToken, requireHR, async (req, 
 });
 
 
-router.post('/hr_exemptions/reject', authenticateToken, requireHR, async (req, res) => {
+router.post('/hr_exemptions/reject', [
+  authenticateToken, 
+  requireHR,
+  body('exemptionId').isInt().withMessage('Invalid exemption ID')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   const { exemptionId } = req.body;
   try {
     let sql = 'UPDATE exemptions SET exemptionStatus = "rejected" WHERE exemptionId = ?';
@@ -383,7 +446,15 @@ router.post('/hr_exemptions/reject', authenticateToken, requireHR, async (req, r
   }
 });
 
-router.post("/search/getuser", authenticateToken, async (req, res) => {
+router.post("/search/getuser", [
+  authenticateToken,
+  body('staffId').trim().notEmpty().withMessage('Staff ID is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   const { staffId } = req.body;
   try {
     const [rows] = await db.query('SELECT * FROM staff WHERE staff_id = ?', [staffId]);
@@ -502,7 +573,15 @@ router.post('/devices/delete', authenticateToken, requireHR, async (req, res) =>
 
 
 
-router.get('/get_user/:id', authenticateToken, async (req, res) => {
+router.get('/get_user/:id', [
+  authenticateToken,
+  param('id').trim().notEmpty().withMessage('Staff ID is required')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: 'Invalid input', errors: errors.array() });
+  }
+
   const { id } = req.params;
   try {
     const [rows] = await db.query(`
